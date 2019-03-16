@@ -1,12 +1,14 @@
 package com.example.myapplication;
 
 import android.Manifest;
+import android.app.Activity;
 import android.arch.lifecycle.LiveData;
 import android.arch.lifecycle.MutableLiveData;
 import android.arch.lifecycle.Observer;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.graphics.Picture;
 import android.net.http.SslError;
 import android.os.Environment;
@@ -15,12 +17,14 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.DisplayMetrics;
 import android.view.View;
 import android.webkit.SslErrorHandler;
 import android.webkit.URLUtil;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import java.io.BufferedReader;
@@ -84,19 +88,37 @@ public class MainActivity extends AppCompatActivity {
 
         try {
             // image naming and path  to include sd card  appending name you choose for file
-            String mPath = Environment.getExternalStorageDirectory().toString() + "/" + now + ".jpg";
+            String mPath = Environment.getExternalStorageDirectory().toString() + "/"+now+".jpg";
 
-            // create bitmap screen capture
-            View v1 = getWindow().getDecorView().getRootView();
-            v1.setDrawingCacheEnabled(true);
-            Bitmap bitmap = Bitmap.createBitmap(v1.getDrawingCache());
-            v1.setDrawingCacheEnabled(false);
+            mWebview.measure(View.MeasureSpec.makeMeasureSpec(
+                    View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED),
+                    View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
+            mWebview.layout(0, 0, mWebview.getMeasuredWidth(),
+                    mWebview.getMeasuredHeight());
+            mWebview.setDrawingCacheEnabled(true);
+            mWebview.buildDrawingCache();
+            Bitmap bm = Bitmap.createBitmap(mWebview.getMeasuredWidth(),
+                    mWebview.getMeasuredHeight(), Bitmap.Config.ARGB_8888);
+
+            Canvas bigcanvas = new Canvas(bm);
+            Paint paint = new Paint();
+            int iHeight = bm.getHeight();
+            bigcanvas.drawBitmap(bm, 0, iHeight, paint);
+            mWebview.draw(bigcanvas);
+            System.out.println("1111111111111111111111="
+                    + bigcanvas.getWidth());
+            System.out.println("22222222222222222222222="
+                    + bigcanvas.getHeight());
+
+
+
+
 
             File imageFile = new File(mPath);
 
             FileOutputStream outputStream = new FileOutputStream(imageFile);
             int quality = 100;
-            bitmap.compress(Bitmap.CompressFormat.JPEG, quality, outputStream);
+            bm.compress(Bitmap.CompressFormat.JPEG, quality, outputStream);
             outputStream.flush();
             outputStream.close();
 
@@ -146,10 +168,17 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    public Bitmap getBitmap() {
 
-    /**
-     * The type My web client.
-     */
+        View rootView = getWindow().getDecorView().findViewById(R.id.parent);
+        rootView.setDrawingCacheEnabled(true);
+        return rootView.getDrawingCache();
+    }
+
+
+        /**
+         * The type My web client.
+         */
     private class MyWebClient extends WebViewClient {
         @Override
         public boolean shouldOverrideUrlLoading(WebView view, String urlNewString) {
@@ -194,6 +223,8 @@ public class MainActivity extends AppCompatActivity {
                 super.onReceivedSslError(view, null, error);
             }
         }
+
+
 
     }
 
