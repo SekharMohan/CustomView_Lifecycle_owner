@@ -1,5 +1,6 @@
 package com.example.myapplication.view;
 
+import android.arch.lifecycle.MutableLiveData;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -9,12 +10,27 @@ import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
 
+
+import java.util.ArrayList;
+
 public class CustomView extends View {
     private Rect r = new Rect();
     int parentWidth;
     int parentHeight;
+    int viewWidth;
+    int barsWidth;
+    int nBars;
+    int viewOffset;
+    private MutableLiveData<Integer> mOffsetValueLiveData;
+    ArrayList<ViewOffset> viewOffsets;
+
+    private int mSelectedValue;
     public CustomView(Context context, AttributeSet attrs) {
         super(context, attrs);
+        viewOffsets = new ArrayList();
+        mOffsetValueLiveData = new MutableLiveData();
+        mOffsetValueLiveData.setValue(mSelectedValue);
+
     }
 
     @Override
@@ -29,21 +45,30 @@ public class CustomView extends View {
         paint.setStyle(Paint.Style.FILL);
         paint.setTextAlign(Paint.Align.CENTER);
         canvas.drawPaint(paint);
-
         paint.setColor(Color.BLACK);
-        paint.setTextSize(20);
-        int max = parentWidth/20;
-int pos = max/2;
+        paint.setTextSize(48);
+         nBars = (20-0)/5 ;
 
-        for(int i=0; i<20; i++) {
+         barsWidth = parentWidth - 32 - 32;
 
-          //  canvas.drawText(String.valueOf(i), max*i/2,max*i,max*i, 50, paint);
-            drawText(canvas, paint, pos, ""+i);
-            pos = pos+max;
+
+        for (int i = 0; i<4 ; i++){
+           viewOffsets.add(new ViewOffset(barsWidth/nBars*i, barsWidth/nBars*(i+1), i*5));
+            int numberPosX = (int)(8 + (barsWidth/nBars) * (i + 0.5));
+
+            canvas.drawText(String.valueOf(i * 5), numberPosX, 150, paint);
+
         }
+        canvas.drawLine(32, 170, parentWidth-32, 170, paint);
+       ViewOffset viewOffset = viewOffsets.get(mOffsetValueLiveData.getValue()/5);
 
-        canvas.drawLine(0,60,parentWidth,60,paint);
+
+      paint.setColor(Color.RED);
+        canvas.drawLine((float) viewOffset.getStartX() , 170, (float)viewOffset.getEndX(), 170, paint);
+
+
     }
+
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
@@ -52,15 +77,38 @@ int pos = max/2;
         parentWidth = MeasureSpec.getSize(widthMeasureSpec);
     }
 
-    public static void drawText(Canvas canvas, Paint paint, int parentWidth, String text) {
-        Rect bounds = new Rect();
-        paint.getTextBounds(text, 0, text.length(), bounds);
-        int x = (parentWidth / 2) - (bounds.width() / 2);
-        int y = (canvas.getHeight() / 2) - (bounds.height() / 2);
-        canvas.drawText(text, x, 50, paint);
+    @Override
+    protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+
+        super.onLayout(changed, left, top, right, bottom);
     }
+
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        return super.onTouchEvent(event);
+
+        getParent().requestDisallowInterceptTouchEvent(true);
+        switch (event.getAction()) {
+            case MotionEvent.ACTION_DOWN:
+            case MotionEvent.ACTION_MOVE:
+                return true;
+
+            case MotionEvent.ACTION_UP:
+                System.out.println("VCC touch event"+event.getX());
+                for(int i = 0; i< 4; i++) {
+                    ViewOffset offset = viewOffsets.get(i);
+                    if(event.getX() > offset.getStartX() && event.getX() < offset.getEndX()) {
+                       if(mOffsetValueLiveData.getValue() != offset.getOffSetValue()) {
+                           mOffsetValueLiveData.setValue(offset.getOffSetValue());
+                           invalidate();
+                       }
+                    }
+                }
+                return true;
+
+            default:
+                return false;
+
+        }
+
     }
 }
